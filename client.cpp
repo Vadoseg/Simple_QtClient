@@ -10,28 +10,51 @@ Client::Client(std::string ip, int port_num) {
          //   qDebug() << "Received from server:" << data;
          // });
 
-  connect(socket, &QTcpSocket::connected, this, [this]() {
-    socket->write("Hello from client!");    // Lambda
-    socket->flush();
-  });
+
 
   socket->connectToHost(ip.c_str(), port_num);
 
   Connect(socket);
 }
 
+Client::~Client(){}
+
 int Client::Connect(QTcpSocket *socket){
 
   if (!socket->waitForConnected()) {
     std::cerr << "Connection failed!" << std::endl;
+    connectStatus = 0;
     return 1;
   }
 
-  connection = 1;
+  connectStatus = 1;
 
   return 0;
 }
 
 bool Client::isConnected(){
-  return connection;
+  return connectStatus;
+}
+
+// void Client::onConnectDo(){
+
+//   connect(socket, &QTcpSocket::connected, this, [this]() {
+//     socket->write("SUP");    // Lambda
+//     socket->flush();
+//   });
+
+// }
+
+void Client::writeMessage(std::string mesgToSend){
+  socket->write(mesgToSend.c_str());
+  socket->flush();
+}
+
+void Client::readMessage(){}
+
+int main(){
+  Client cli("127.0.0.1", 8080);
+
+  cli.writeMessage("TEST");
+
 }

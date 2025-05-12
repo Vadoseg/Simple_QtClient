@@ -11,11 +11,18 @@ class Client : public QObject {
   public:
     Client(std::string ip, int port_num);
     bool isConnected();
-    QTcpSocket *socket;
+    virtual ~Client();
+    virtual void writeMessage(std::string mesgToSend);
+    virtual void readMessage();
+
+    // virtual void onConnectDo();
+
 
   private:
     int Connect(QTcpSocket *socket);
-    bool connection = 0;
+    bool connectStatus = 0;
+    QTcpSocket *socket;
+
 
 };
 
