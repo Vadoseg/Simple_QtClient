@@ -5,25 +5,28 @@
 #include <QTcpSocket>
 #include <QDebug>
 #include <iostream>
+#include <QDataStream>
 
 class Client : public QObject {
+    Q_OBJECT
 
   public:
-    Client(std::string ip, int port_num);
-    bool isConnected();
+    explicit Client(std::string ip, int port_num);
     virtual ~Client();
-    virtual void writeMessage(std::string mesgToSend);
-    virtual void readMessage();
+    int checkConnect();
+    bool isConnected();
 
-    // virtual void onConnectDo();
-
-
-  private:
-    int Connect(QTcpSocket *socket);
-    bool connectStatus = 0;
     QTcpSocket *socket;
 
+    virtual void socketWrite(const QByteArray &data);
+    virtual void socketRead();
 
+  private:
+    bool connectionStatus = 0;
+
+  signals:
+    void connectedToServer();
+    void connectTimeout();
 };
 
 #endif // CLIENT_H

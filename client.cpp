@@ -1,60 +1,69 @@
 
 #include "client.h"
+#include <unistd.h>
 
-Client::Client(std::string ip, int port_num) {
-
-  socket = new QTcpSocket(this);
-
-         // connect(socket, &QTcpSocket::readyRead, this, [socket]() {
-         //   QByteArray data = socket->readAll();    // Lambda
-         //   qDebug() << "Received from server:" << data;
-         // });
-
-
+Client::Client(std::string ip, int port_num) : socket(new QTcpSocket(this)) {
 
   socket->connectToHost(ip.c_str(), port_num);
 
-  Connect(socket);
+  connect(socket, &QTcpSocket::readyRead, this, &Client::socketRead);
+
+  checkConnect();
 }
 
 Client::~Client(){}
 
-int Client::Connect(QTcpSocket *socket){
+int Client::checkConnect(){
 
   if (!socket->waitForConnected()) {
     std::cerr << "Connection failed!" << std::endl;
-    connectStatus = 0;
-    return 1;
+    return -1;
   }
 
-  connectStatus = 1;
+  connectionStatus = 1;
 
   return 0;
 }
 
 bool Client::isConnected(){
-  return connectStatus;
+  return connectionStatus;
 }
 
-// void Client::onConnectDo(){
+void Client::socketRead(){
 
-//   connect(socket, &QTcpSocket::connected, this, [this]() {
-//     socket->write("SUP");    // Lambda
-//     socket->flush();
-//   });
+  QDataStream client_datastream(socket);
 
-// }
+  int block_size = 0;
 
-void Client::writeMessage(std::string mesgToSend){
-  socket->write(mesgToSend.c_str());
-  socket->flush();
+  while(socket->bytesAvailable() > 0){
+    if (block_size == 0){
+      if (socket->bytesAvailable() < sizeof(int)) return;
+
+      client_datastream >> block_size;
+    }
+
+    if (socket->bytesAvailable() < block_size)
+      return;
+
+    QByteArray message;
+    message.resize(block_size);
+    client_datastream.readRawData(message.data(), block_size);
+
+    qDebug() << "Recieved message from athena_server: " << Qt::hex << message.data();
+
+    block_size = 0;
+  }
 }
 
-void Client::readMessage(){}
+void Client::socketWrite(const QByteArray &data){
 
-int main(){
-  Client cli("127.0.0.1", 8080);
+  QByteArray block;
 
-  cli.writeMessage("TEST");
+  QDataStream outBlock(&block, QIODevice::WriteOnly);
 
+  outBlock << data.size();
+
+  block.append(data);
+
+  socket->write(block);
 }
